@@ -1,0 +1,241 @@
+# CIS 3339 Data Platform — Sprint 1 Functional Specification and Project Plan
+
+**Prepared:** October 8, 2026  
+**Status:** Draft for team review; proposed dates and role assignments are not confirmed course deadlines.  
+**Project:** Continue and improve the supplied MEVN application; do not replace it with a new application.
+
+## 1. Purpose and scope
+
+The Data Platform is used by nonprofit organizations and Community Health Workers (CHWs) to manage clients, services, events, and event attendance. The dashboard summarizes attendance and client ZIP-code counts. One shared MongoDB may serve multiple organizations; each deployed app instance is configured for one organization, and users must only see that organization's data. Viewers may read; editors may read and make changes.
+
+Sprint 1 establishes a verified description of the supplied system, records its gaps, and proposes testable end-state behavior and a delivery plan. It does not claim that planned changes have been implemented. The scope below covers the frontend student-task guide, the core Project-README requirements, documentation, deployment, and bonus tests. The two guides reuse some task IDs, so their tracks are labeled separately throughout.
+
+## 2. High-level architecture
+
+The browser hosts a Vue single-page application. Vue Router selects views, Pinia holds login state, and the Axios client sends REST requests to the Express API. The API validates JWTs, applies route behavior, and uses Mongoose models to read or write MongoDB. JSON responses return through Axios to the Vue view, which updates reactive state and renders the result. The target architecture adds explicit role checks, organization-scoped queries, centralized errors, and reproducible initialization; several of these protections are missing or incomplete in the current code.
+
+```mermaid
+flowchart LR
+	Person[CHW / editor / viewer] --> Browser
+	subgraph Frontend[Vue 3 SPA in browser]
+		Browser[Vue views and components]
+		Router[Vue Router and navigation guard]
+		Pinia[Pinia login/session state]
+		Axios[Axios API client\nVITE_ROOT_API]
+		Browser <--> Router
+		Browser <--> Pinia
+		Browser --> Axios
+	end
+	Axios -->|JSON REST + Bearer JWT| Express[Express / Node.js API]
+	subgraph Backend[Backend]
+		Express --> Cors[CORS + JSON middleware]
+		Cors --> Auth[JWT authentication\nrole authorization (target)]
+		Auth --> Routes[Client / event / service / org / user routes]
+		Routes --> Scope[Organization-scoped query helper (target)]
+		Scope --> Mongoose[Mongoose models and schemas]
+	end
+	Mongoose --> Mongo[(MongoDB\norg, users, clients, events, services)]
+	Mongo -->|documents / aggregate results| Mongoose
+	Mongoose --> Routes
+	Routes -->|status + JSON| Axios
+	Axios --> Browser
+```
+
+**Current implementation notes:** Frontend files are under [frontend/src](frontend/src); the Vite app and its plugin setup are in [frontend/src/main.js](frontend/src/main.js). The API client reads `VITE_ROOT_API` in [frontend/src/api/api.js](frontend/src/api/api.js). Express mounts the route modules and connects Mongoose in [backend/app.js](backend/app.js), while schemas/models are in [backend/models/models.js](backend/models/models.js). The current server allows CORS from `*`, has authentication middleware but no reusable role authorization middleware, and does not consistently scope all queries to the authenticated user's organization. Those are gaps, not intended final behavior.
+
+## 3. Current-template user-flow diagrams
+
+The diagrams describe available template flows and identify where required behavior is incomplete. A workflow depicted as current does not imply its security or error behavior already meets the target.
+
+### Flow A — Sign in, browse clients, and open a record
+
+```mermaid
+flowchart TD
+	A[Open app] --> B{Pinia says logged in?}
+	B -- No --> C[Router sends protected route to Login]
+	C --> D[Enter username and password]
+	D --> E[POST /users/login]
+	E --> F{Credentials valid?}
+	F -- No --> G[Show login error]
+	F -- Yes --> H[Receive JWT; save token and set Axios header]
+	H --> I[Open Find Client]
+	B -- Yes --> I
+	I --> J[GET /clients with Bearer token]
+	J --> K[Render client rows]
+	K --> L[Select a row]
+	L --> M[Open /clientdetails/:id]
+	M --> N[GET client by ID and render details]
+```
+
+**Current gaps in this flow:** startup does not restore a saved token to the Axios header and Pinia state; the current list endpoint queries `find({})` without a tenant filter; a failed request may be shown as an object instead of a readable message. The router checks authentication only and does not protect editor-only form routes by role.
+
+### Flow B — Find an event and register a client
+
+```mermaid
+flowchart TD
+	A[Authenticated user opens Find Events] --> B[GET /events or search events]
+	B --> C[Select event and open event details]
+	C --> D[Load event and attendee / eligible-client information]
+	D --> E{User is editor?}
+	E -- No --> F[Viewer can inspect; no registration action should be permitted]
+	E -- Yes --> G[Choose client and register]
+	G --> H[PUT /events/register with event and client IDs]
+	H --> I{Event and client exist in user's organization?}
+	I -- No --> J[404; do not modify data]
+	I -- Yes --> K{Already registered?}
+	K -- Yes --> L[200 Already registered; no duplicate]
+	K -- No --> M[Add attendee and return success]
+	M --> N[Refresh event / attendee display]
+```
+
+The template already models event attendees as client IDs on an event and has register/deregister endpoints. The expected viewer denial, same-organization checks, duplicate response, and safe deregistration behavior are specified in the target contract; current route behavior does not satisfy all of them.
+
+## 4. Trace of one existing request, view to database and back
+
+**Example:** load the client list when `findclient.vue` mounts.
+
+1. In [frontend/src/views/findclient.vue](frontend/src/views/findclient.vue), the `mounted()` hook calls `loadData()`.
+2. `loadData()` calls `getClients()` from [frontend/src/api/api.js](frontend/src/api/api.js). The function sends `GET clients` through the Axios instance whose base URL is `import.meta.env.VITE_ROOT_API`; the token is supplied in the shared `Authorization` header after login.
+3. [backend/app.js](backend/app.js) mounts the client router at `/clients`. The router's `GET /` handler in [backend/routes/clients.js](backend/routes/clients.js) invokes JWT authentication middleware, then calls `clients.find({})`.
+4. `clients` is the Mongoose model created from `clientDataSchema` in [backend/models/models.js](backend/models/models.js), mapped to MongoDB's `clients` collection. MongoDB returns matching documents to Mongoose.
+5. The route serializes the result as JSON. Axios resolves with the response; `getClients()` returns `response.data`; `loadData()` assigns that array to `this.clients`; Vue renders the rows in the table.
+
+**Observed behavior / risk:** this is a real end-to-end request path, but `find({})` is not organization-scoped. Also, the view catches and passes the error object directly to the toast. The path is useful as a tracing example, not as an acceptable security or error-handling pattern. The current `GET /clients` route is protected by authentication middleware, but the JWT does not currently carry the organization claim needed by the target shared tenant filter.
+
+## 5. Gap analysis — every task in the supplied guides
+
+**Status legend:** **Missing** = required behavior or artifact was not found; **Partial** = some relevant implementation exists but acceptance criteria are not met; **Not evidenced** = the workspace cannot establish whether the task has been performed outside the repository. This is a source review, not a claim that runtime tests were executed. Frontend IDs below refer to [frontend/STUDENT-TASKS.md](frontend/STUDENT-TASKS.md); core IDs refer to [Project-README.md](Project-README.md).
+
+### 5.1 Frontend guide: bug fixes (F1–F5)
+
+| Task | Current status | Gap in current code |
+|---|---|---|
+| F1 — Login does not survive a page refresh | Partial | Login saves the token and sets the header, but app startup does not restore the token, role, or header; no 401 response interceptor logs the user out. |
+| F2 — `catch` block throws an undefined variable | Missing | `App.vue` has a bare `catch` followed by a reference to undeclared `error`. |
+| F3 — Dead Vuex code in a Pinia project | Missing | `App.vue` retains an unused `this.$store.dispatch(...)` method even though session state uses Pinia. |
+| F4 — Error toasts display `[object Object]` | Missing | Multiple views pass thrown objects to toast calls or use toast options as if they were a second message argument. |
+| F5 — API layer crashes when the backend is unreachable | Missing | API functions inconsistently rethrow failures; some dereference `error.response.data`, which is absent for network failures. |
+
+### 5.2 Frontend guide: refactor and component extraction
+
+| Task | Current status | Gap in current code |
+|---|---|---|
+| R1 — Migrate all views and components to `<script setup>` | Missing | Views/components retain Options API and some mix `setup()`, `data()`, and `methods`. |
+| R2 — Extract shared `formatDate` utility | Missing | Date formatting is duplicated in dashboard, event list, client detail, and service detail. |
+| R3 — Build `useApi` loading/error/data composable | Partial | Dashboard has locally implemented state; there is no shared composable and list views lack consistent state. |
+| R4 — Centralize API error handling | Missing | `api.js` contains repeated pass-through `try/catch`; there is no single response interceptor. |
+| R5 — Rewrite charts with Composition API | Missing | Chart components use Options API lifecycle, do not watch prop changes or destroy chart instances, and unnecessarily await construction. |
+| C1 — Extract reusable `DataTable` | Missing | Client/event/service tables are inline and have no shared sort/pagination implementation. |
+| C2 — Extract reusable `SearchBar` | Missing | Three find views implement similar search controls independently. |
+| C3 — Build confirmation modal | Missing | Delete flows have no reusable confirmation UI; delete calls can be immediate. |
+| C4 — Extract navigation sidebar from `App.vue` | Missing | Root component still owns navigation markup and visibility logic. |
+
+### 5.3 Frontend guide: security, accessibility, UX, and tooling
+
+| Task | Current status | Gap in current code |
+|---|---|---|
+| S1 — Role checks fail open | Missing | Detail views disable editing only for role `viewer`; unknown or missing roles are not safely denied. |
+| S2 — Router does not enforce roles | Missing | Guard checks authentication only; editor forms lack editor-role metadata/checks. |
+| S3 — Add catch-all 404 route | Missing | No not-found route/view was found. |
+| A1 — Make table rows keyboard accessible | Missing | Clickable rows lack keyboard activation, tab stops, and a visible focus style. |
+| A2 — Add image alt text and portable asset path | Missing | Logo lacks `alt` text and uses a Windows-style backslash path. |
+| A3 — Document language and label forms | Missing | `index.html` has an empty `lang`; search controls do not all have associated labels. |
+| A4 — Audit accessibility and fix top findings | Not evidenced | No before/after Lighthouse or axe report and written disposition of findings were found. |
+| U1 — Pagination and sorting | Missing | Lists render rows without required sorting, pagination, or a result count. |
+| U2 — Loading, empty, and error states | Missing (lists) | Find views do not visibly distinguish all three states; dashboard has bespoke rather than shared behavior. |
+| U3 — Responsive layout | Missing | Current fixed sidebar/content layout has no demonstrated 375px navigation behavior. |
+| U4 — Fix dashboard render race | Missing | Dashboard initializes `loading` false, making correctness rely on other render guards. |
+| T1 — Clean up `package.json` | Missing | Vue 2 `vuelidate` dependency remains and Vite build dependencies are not classified as dev dependencies. |
+| T2 — Add `.env.example` | Missing | No frontend environment example file was found. |
+| T3 — Make linting run | Missing | There is no usable frontend `lint` script. |
+| T4 — Add a test suite | Missing | No Vitest setup/test files or frontend test command were found. |
+
+### 5.4 Project-README core implementation and delivery tasks
+
+| Task | Current status | Gap in current code |
+|---|---|---|
+| Core F1 — Composition API migration | Missing | Same implementation gap as frontend guide R1; Options API remains in views/components. |
+| Core F2 — Async-state composable and centralized API errors | Partial | Dashboard has hand-built state; no shared `useApi`, list states, or centralized Axios response handling. |
+| Core F3 — Reusable sortable/paginated data table | Missing | No common table component; list markup is duplicated and lacks the required behavior. |
+| Core F4 — Restore session and guard editor routes | Partial | Login writes a token and auth-only routes exist, but refresh restoration and editor-only route protection are absent. |
+| Core S1 — Authentication, roles, tenant isolation, CORS, generic login failure | Partial; critical gaps | JWT middleware exists, but role middleware and consistent `req.user.orgId` scoping are absent; some routes are unprotected; CORS is `*`; login reveals whether the username exists. |
+| Core B1 — Safe event registration/deregistration | Partial | Existing endpoints do not consistently verify both records' organization, return the specified idempotent messages, or guarantee no duplicates safely. |
+| Core B2 — Central errors and health check | Partial | An error handler exists but returns a raw message rather than `{error: ...}`; no unauthenticated `/health` endpoint was found. |
+| Core D1 — Idempotent DB init and seed data | Missing | Manual DB setup and one-off hash script remain; `db:init` and idempotent representative seed data are absent. |
+| Core D2 — Deployable and verified production frontend | Partial | Build/serve scripts and `VITE_ROOT_API` exist, but hosting/fallback/deployment steps and production verification evidence are absent. |
+| Bonus — Automated tests | Missing | No frontend/backend automated test suite or isolated test database evidence was found. |
+
+### 5.5 Documentation and teamwork requirements
+
+| Requirement | Current status | Gap / action |
+|---|---|---|
+| Reproducible README: prerequisites, supported Node, install/start, env meanings, initialization, builds/tests, demo users, deployment/fallback/CORS, known limitations | Partial | Existing READMEs provide basic local setup but do not document the full grading/deployment workflow or tested limitations. |
+| Dedicated course-only grading environment values in backend/frontend `.env` | Not verified / not present in inspected file inventory | Team/instructor must provide and verify a dedicated DB configuration. Never substitute personal/production credentials; do not put secrets in this specification. |
+| GitHub issues/project board, agreed branching/PR/review process, meaningful commits from each member | Not evidenced | Agree and record team process; workspace inspection cannot verify remote activity. |
+| Sprint deliverables, presentation/demo, peer evaluation | Pending | Schedule/reporting are governed by Canvas; verify official deadlines and submission locations with the instructor. |
+
+## 6. Proposed testable functional specification
+
+The following is the proposed end state. It should be approved by the team before implementation; any agreed deviation should be recorded in an issue/PR and this specification updated.
+
+### User roles and application behavior
+
+| ID | Requirement | Acceptance test |
+|---|---|---|
+| FS-01 | Users can log in with valid credentials as viewer or editor; invalid username and invalid password yield the same public message. | Exercise both invalid cases and verify identical status/message; valid demo accounts receive a usable session. |
+| FS-02 | A valid unexpired token restores Axios authorization and Pinia role/login state after refresh; expired, malformed, or tampered tokens are cleared without an application crash. Logout clears token, header, and Pinia state. | Login, refresh a protected route, then test expired/corrupt storage and logout; confirm final state and route behavior. |
+| FS-03 | All protected data views require authentication. Editor-only UI routes and all server-side mutations require the editor role; the server is authoritative. | Directly navigate as viewer to each editor form and submit a mutation request as viewer; redirect on UI and return HTTP 403 from API. Editor mutation succeeds when otherwise valid. |
+| FS-04 | Every client, event, and service read/write is restricted to `req.user.orgId`, including search, detail, aggregate, attendance, registration, and deletion paths. | Seed two organizations; authenticate as A and prove A cannot read, update, delete, register, or infer B's records (not found where specified). Repeat as B. |
+| FS-05 | Client, event, and service CRUD/search flows remain usable with existing data shapes and validation; CHWs can view records and editors can make permitted changes. | Run create/read/search/update/delete cases per entity, including validation and business-rule failures; confirm UI refreshes to current results. |
+| FS-06 | The event attendance workflow registers/deregisters only same-organization client/event pairs and is idempotent. | First registration creates one attendee; repeating returns HTTP 200 `{ "message": "Already registered" }` and leaves exactly one; deregistering a non-attendee returns HTTP 200 `{ "message": "Not registered" }`; cross-org/missing pair returns 404. Both endpoints require auth and editor role. |
+| FS-07 | Client/event/service lists and dashboard expose separate loading, success, empty, and failure states. Retry repeats the same request; failures display a short human-readable message, never `[object Object]`. | Simulate slow, empty, successful, rejected, and offline API cases; verify correct visible state and retry. Confirm Axios interceptor normalizes failures and clears/redirects on 401. |
+| FS-08 | Shared `DataTable` sorts each configured column ascending/descending/unsorted, paginates 10 rows, reports displayed range/total, handles no results, and resets/clamps page after search/data changes. | Use at least 15 rows for each list; test sort cycle, pages, search while on later page, empty set, and no stale rows. |
+| FS-09 | Frontend refactor preserves login, role display, validation, CRUD, search, chart data, date display, and route-param behavior; charts update on prop change and clean up on unmount. | Regression-test relevant flows, run without Vue warnings/errors, update chart props, and navigate away/back repeatedly with no accumulated chart instance/listener. |
+| FS-10 | Express returns consistent `{ "error": "Human readable message" }` responses for validation/not-found/unexpected failures with statuses 400/404/500 and no stack/raw DB details; `GET /health` works without authentication and reports app/database state. | Exercise all three error classes and health while DB connected/disconnected; inspect response shape and absence of sensitive details. |
+| FS-11 | `npm run db:init` validates config, hashes passwords, creates the required org, viewer/editor, representative clients/services/events and at least one registration, plus required indexes; repeat runs do not duplicate data or delete existing data. | Run against a disposable empty DB, verify login and seeded relationships, rerun and compare counts/IDs; misconfiguration must exit nonzero with useful diagnostics. |
+| FS-12 | Production frontend installs, builds, and serves using documented `VITE_ROOT_API`; static hosting supports nested-route refresh and configured backend CORS. | From clean dependencies run `npm run build`, then preview/serve `dist`; open/refresh a nested route, test API connectivity, and follow the documented hosting fallback setup. Demo must use production build. |
+| FS-13 | UX and accessibility meet the specified baseline: 375px usable responsive navigation; keyboard-operable table rows; meaningful logo alternative text and portable path; `lang="en"`; associated labels; accessible confirmation modal with cancel, focus trap, and Escape. | Test at 375px, keyboard-only navigation, screen-reader/name inspection, delete confirm/cancel network behavior, and record before/after Lighthouse or axe findings plus deferred items. |
+| FS-14 | New developer can reproduce setup, initialization, test/build, and deployment from README and documented environment examples; no personal or production secrets enter source/report. | Follow instructions in a clean checkout using a dedicated course/test database; verify `.env.example`, run scripts, demo accounts, and documented known limitations. |
+
+**Verification plan:** Automated unit/component tests should cover `formatDate`, `useApi` success/failure, `SearchBar` payload, and router role guard. Backend/API integration tests should cover viewer 403/editor success, tenant isolation, registration idempotency, central error shapes, and health. Use isolated disposable test data, not the grading/production database. Then run frontend lint/test/build and documented API/integration checks, followed by manual role-based workflows and deployment-preview smoke tests. Record exact commands and results in the README/CI output. Bonus tests are proposed and are not represented as already configured.
+
+## 7. Proposed timeline, owners, dependencies, and review assignments
+
+**Planning basis:** start date is October 8, 2026. The course README sends official deadlines/assignments to Canvas, so all dates below are proposed working dates and must be reconciled with Canvas. Replace role labels with team member names at kickoff. One person should not be the sole author and reviewer of the same substantial change.
+
+| Target completion | Work / deliverable | Owner (person TBD) | Dependencies | Review assignment |
+|---|---|---|---|---|
+| Oct 8, 2026 | Approve this scope; confirm Canvas dates; assign roles; create issue board and PR rules | Facilitator / requirements owner | Instructor deadline and team roster | Whole team; QA records decisions and unresolved questions |
+| Oct 9, 2026 | Baseline inventory, request trace, isolated test-data plan, current build/test baseline | QA / test owner | Kickoff; access to local project and test DB plan | Backend owner reviews trace; frontend owner checks UI findings |
+| Oct 12, 2026 | Session restore, logout/401 behavior, editor route guard; fix small API/toast failure paths | Frontend owner | Baseline and agreed API error/session contract | Backend/security owner reviews auth assumptions; QA checks viewer/editor refresh cases |
+| Oct 16, 2026 | Composition API migration and shared UI/data-state components; accessible/responsive list and dashboard behaviors | Frontend owner (or client/event/service vertical-slice owners) | Agreed component/API contracts; session work merged incrementally | Peer frontend owner reviews each PR; QA reviews acceptance tests |
+| Oct 16, 2026 | Server auth/role middleware, JWT org claim, tenant helper, CORS and login response hardening | Backend/security owner | Confirm user/org schema and test org IDs; agree status/error contracts | Different backend peer reviews security diff; QA runs cross-org/viewer tests |
+| Oct 20, 2026 | Registration/deregistration rules, common error handler, `/health`; frontend/backend integration | Backend owner + integration owner | Security foundation and agreed FS-06/FS-10 contracts | Frontend owner validates client calls; QA verifies duplicate, missing, cross-tenant cases |
+| Oct 21, 2026 | Idempotent `db:init`, seed accounts/data/indexes, env examples and setup docs | Backend/data owner | Dedicated disposable/course DB values and final model/index decisions | Security reviewer checks hashing/no destructive default; QA executes clean and repeat init |
+| Oct 22, 2026 | Automated tests, production build/preview, nested-route and CORS/deployment verification | QA/test owner + deployment owner | Integrated routes, seed data, stable contracts and chosen host | Frontend reviewer checks build; backend reviewer checks API integration; whole team demo rehearsal |
+| Oct 23, 2026 | Defect buffer, README/known limitations, final production-build demo and handoff | Facilitator + all owners | All prior work; Canvas schedule confirmation | Whole-team sign-off; final PR approvals by non-authors |
+
+### Proposed ownership model
+
+- **Facilitator / requirements owner:** meeting notes, acceptance criteria, issue board, Canvas deadline confirmation, and final scope decisions.
+- **Frontend owner:** Vue migration, session/UI behavior, reusable components, accessibility, responsive layout, frontend build.
+- **Backend/security owner:** Express middleware, JWT claims, organization isolation, error/health behavior, registration contract, CORS.
+- **Data/setup owner:** Mongoose constraints, safe/idempotent seed script, environment examples, onboarding instructions.
+- **QA/integration/deployment owner:** test strategy, isolated test data, acceptance evidence, build/preview/hosting smoke tests, demo checklist.
+
+For a smaller team, combine roles explicitly. Every significant implementation PR should list an author, an independent reviewer, linked acceptance criteria/issues, and test evidence. Security and tenant-isolation changes require review by someone other than the author. If these dates conflict with Canvas, Canvas takes precedence and owners should rescope openly rather than silently omit acceptance criteria.
+
+## 8. AI-use appendix and team decisions
+
+### AI tools and prompts
+
+- **GitHub Copilot (this assistant):** asked to inspect the supplied project brief and repository, prepare the Sprint 1 functional specification/project plan in `Sprint1.txt`, trace a real frontend-to-database request, identify gaps for every task, and include diagrams, measurable acceptance tests, owners/dependencies/reviews/dates, and an AI-use appendix.
+- **GitHub Copilot Explore subagent:** asked to perform a read-only, thorough codebase review and report architecture, an existing request trace, task-by-task implementation status, candidate test scope, and unknown team/date assignments. No code was changed by the subagent.
+
+### Verification performed for this draft
+
+The task inventory was cross-checked against [Project-README.md](Project-README.md) and [frontend/STUDENT-TASKS.md](frontend/STUDENT-TASKS.md). The architecture and request trace were checked against the actual frontend client-list view, Axios module, router/store/bootstrap, Express app, authentication middleware, client route, and Mongoose models. The report distinguishes partial implementation from acceptance-complete behavior and flags facts that cannot be verified from the workspace (remote team assignments, outside-repository audit results, official deadlines, actual credentials, and deployment). This review is static; no runtime test, database connection, deployment, or accessibility audit was run for this document. Before submission, the team should reproduce each claim, run the applicable checks, and export/format the report as the required PDF if Canvas requires PDF.
+
+### Decisions made by the team versus proposals
+
+No team members, meeting notes, assigned owners, or recorded team decisions were present in the inspected workspace. Therefore, **no implementation, architecture, deployment, security, or schedule choice in this draft is represented as already approved by the team**. The functional specification, ownership model, review assignments, and October dates are proposals for team review. The team must decide and record at least: named owners/reviewers; official deadline and feasible schedule; priority/deferment among guide tasks; the exact test/deployment environments; and the approved course-only database/environment configuration. Course-required security and acceptance criteria should not be relaxed without instructor approval.
