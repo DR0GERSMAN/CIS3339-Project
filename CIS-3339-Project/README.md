@@ -23,4 +23,4 @@ cd frontend
 Follow instructions in frontend README for setup and running as a local instance.
 
 Contributors: 
-Toby Nzekwu, Sarrthi Jasrotia, Ezra Kihshen, Donovan Rogers
+Toby Nzekwu, Sarrthi Jasrotia, Ezra Kihshen, Donovan Rogers, Tobiloba Ajakaye
