@@ -31,22 +31,15 @@
     </div>
 </template>
 
-<script>
-  import { useLoggedInUserStore } from "../store/loggedInUser";
+<script setup>
+import { ref } from 'vue';
+import { useLoggedInUserStore } from '../store/loggedInUser';
 
-  export default {
-    data() {
-      return {
-        username: "",
-        password: "",
-      }
-    },
-    setup() {
-      const store = useLoggedInUserStore();
-      return {
-        store
-      }
-    }
-  }
+// ref replaces the username and password values previously returned by data().
+// Vue automatically unwraps refs in the template for v-model.
+const username = ref('');
+const password = ref('');
+
+// Script setup exposes the Pinia store directly to the login form.
+const store = useLoggedInUserStore();
 </script>
-
