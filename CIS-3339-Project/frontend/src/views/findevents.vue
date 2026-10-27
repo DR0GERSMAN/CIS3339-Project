@@ -122,7 +122,7 @@ export default {
         const response = await getEvents();
         this.events = response;
       } catch (error) {
-        toast.error('loadData error', error)
+        toast.error(`loadData error: ${error?.message || error}`)
       }
     },
 
@@ -139,7 +139,7 @@ export default {
             const response = await searchEvents(query);
             this.events = response;
           } catch (error) {
-            toast.error('Error searching events', error)
+            toast.error(`Error searching events: ${error?.message || error}`)
           }
         }
         // if user searches by event date
@@ -155,7 +155,7 @@ export default {
             const response = await searchEvents(query);
             this.events = response;
           } catch (error) {
-            toast.error('Error searching events:', error)
+            toast.error(`Error searching events: ${error?.message || error}`)
           }
         }
       }
@@ -172,3 +172,12 @@ export default {
   },
 }
 </script>
+
+
+
+
+
+
+
+
+

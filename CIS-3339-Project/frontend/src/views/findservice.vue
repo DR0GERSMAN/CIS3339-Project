@@ -120,7 +120,7 @@ export default {
         const response = await getServices();
         this.services = response;
       } catch (error) {
-        toast.error(error)
+        toast.error(error?.message || error || 'Something went wrong.')
       }
     },
 
@@ -137,7 +137,7 @@ export default {
             const response = await searchServices(query)
             this.services = response;
           } catch (error) {
-            toast.error(error)
+            toast.error(error?.message || error || 'Something went wrong.')
           }
         }
         // if user searches by service description
@@ -151,7 +151,7 @@ export default {
             const response = await searchServices(query)
             this.services = response;
           } catch (error) {
-            toast.error('Error searching services:', error)
+            toast.error(`Error searching services: ${error?.message || error}`)
           }
         }
       }
@@ -159,3 +159,12 @@ export default {
   },
 }
 </script>
+
+
+
+
+
+
+
+
+

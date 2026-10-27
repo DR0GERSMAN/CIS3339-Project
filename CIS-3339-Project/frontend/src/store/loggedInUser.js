@@ -1,50 +1,66 @@
-// This pinia store contains state with respect to whether a user is logged in 
-import { defineStore } from 'pinia'
-import { useToast } from 'vue-toastification'
-import { loginUser, logoutUser } from '../api/api' // import API calls
-import jwt_decode from 'jwt-decode'; // import JSON Web Token decoder to decode the token into the user's information
+import { defineStore } from 'pinia';
+import { useToast } from 'vue-toastification';
+import jwtDecode from 'jwt-decode';
+import { loginUser, logoutUser, isTokenExpired } from '../api/api';
 
-//Notifications
-const toast = useToast()
+const toast = useToast();
 
-// Defining a store
 export const useLoggedInUserStore = defineStore({
   id: 'loggedInUser',
-  state: () => {
-    return {
-      name: "",
-      role: "",
-      isLoggedIn: false
-    }
-  },
+  state: () => ({
+    name: '',
+    role: '',
+    isLoggedIn: false
+  }),
   actions: {
+    restoreSession() {
+      const token = localStorage.getItem('authToken');
+      if (!token || isTokenExpired(token)) {
+        logoutUser();
+        this.name = '';
+        this.role = '';
+        this.isLoggedIn = false;
+        return false;
+      }
+
+      try {
+        const decodedToken = jwtDecode(token);
+        this.name = decodedToken.name || '';
+        this.role = decodedToken.role || '';
+        this.isLoggedIn = true;
+        return true;
+      } catch {
+        logoutUser();
+        this.name = '';
+        this.role = '';
+        this.isLoggedIn = false;
+        return false;
+      }
+    },
     async login(username, password) {
       try {
         const token = await loginUser(username, password);
-        // Get the user's name and role from the JWT token
-        const decodedToken = jwt_decode(token);
+        const decodedToken = jwtDecode(token);
         this.$patch({
           isLoggedIn: true,
-          role: decodedToken.role,
-          name: decodedToken.name
+          role: decodedToken.role || '',
+          name: decodedToken.name || ''
         });
-        this.$router.push("/");
-        toast.success("Login Sucessful!")
-
-      } catch ( error ) {
-        toast.error(error.message)
+        this.$router.push('/');
+        toast.success('Login successful!');
+      } catch (error) {
+        toast.error(error?.message || 'Login failed.');
       }
     },
     logout() {
       logoutUser();
-      // Reset value after user log out
       this.$patch({
-        name: "",
-        role: "",
+        name: '',
+        role: '',
         isLoggedIn: false
       });
-      this.$router.push("/");
-      toast.info("You have been logged out!")
+      this.$router.push('/login');
+      toast.info('You have been logged out!');
     }
-  },
+  }
 });

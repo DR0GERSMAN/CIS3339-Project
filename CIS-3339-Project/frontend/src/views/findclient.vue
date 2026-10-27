@@ -134,7 +134,7 @@ export default {
         const response = await getClients();
         this.clients = response;
       } catch (error) {
-        toast.error(error)
+        toast.error(error?.message || error || 'Something went wrong.')
       }
     },
     // method called when user searches for clients
@@ -151,7 +151,7 @@ export default {
             const response = await searchClients(query)
             this.clients = response;
           } catch (error) {
-            toast.error(error)
+            toast.error(error?.message || error || 'Something went wrong.')
           }
         }
         // if user searches by client phone number
@@ -165,7 +165,7 @@ export default {
             const response = await searchClients(query)
             this.clients = response;
           } catch (error) {
-            toast.error(error)
+            toast.error(error?.message || error || 'Something went wrong.')
           }
         }
       }

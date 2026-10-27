@@ -319,7 +319,7 @@ export default {
       this.eventsFiltered = nonClientEventsResponse;
 
     } catch (error) {
-      toast.error('error loading data:', error)
+      toast.error(`error loading data: ${error?.message || error}`)
     }
   },
   methods: {
@@ -343,14 +343,14 @@ export default {
         const response = await deregisterAttendee(eventId, clientId);
         toast.success(response)
       } catch (error) {
-        toast.error(error);
+        toast.error(error?.message || error || 'Something went wrong.');
       }
       // update events for which client is registered, and events for which client is not registered
       try {
         this.clientEvents = await getClientEvents(this.$route.params.id);
         this.eventsFiltered = await getNonClientEvents(this.$route.params.id);
       } catch (error) {
-        toast.error(error);
+        toast.error(error?.message || error || 'Something went wrong.');
       }
     },
 
@@ -372,14 +372,14 @@ export default {
               this.eventsFiltered = await getNonClientEvents(this.$route.params.id);
               this.eventsSelected = [];
             } catch (error) {
-              toast.error(error);
+              toast.error(error?.message || error || 'Something went wrong.');
             }
           })
           .catch((error) => {
-            toast.error(error);
+            toast.error(error?.message || error || 'Something went wrong.');
           });
       } catch (error) {
-        toast.error(error);
+        toast.error(error?.message || error || 'Something went wrong.');
       }
 
     },
@@ -399,7 +399,7 @@ export default {
         this.$router.push('/findclient')
         toast.success(response)
       } catch (error) {
-        toast.error(error)
+        toast.error(error?.message || error || 'Something went wrong.')
       }
     },
 
@@ -410,7 +410,7 @@ export default {
         toast.success(response)
         this.$router.push('/findclient')
       } catch (error) {
-        toast.error(error);
+        toast.error(error?.message || error || 'Something went wrong.');
       }
     },
   }
@@ -430,3 +430,12 @@ export default {
   color: black;
 }
 </style>
+
+
+
+
+
+
+
+
+

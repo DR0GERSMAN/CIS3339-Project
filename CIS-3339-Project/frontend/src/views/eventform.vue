@@ -223,7 +223,7 @@ export default {
         const response = await getServices();
         this.activeServices = response.filter(item => item.status === "Active")
       } catch (error) {
-        toast.error(error)
+        toast.error(error?.message || error || 'Something went wrong.')
       }
   },
   methods: {
@@ -243,9 +243,18 @@ export default {
         this.$router.push('/findevents')
         toast.success(response)
       } catch (error) {
-        toast.error('error creating new event:', error)
+        toast.error(`error creating new event: ${error?.message || error}`)
       }
     },
   },
 }
 </script>
+
+
+
+
+
+
+
+
+

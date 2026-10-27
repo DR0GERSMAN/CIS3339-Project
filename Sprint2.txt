@@ -1,0 +1,22 @@
+Sprint 2 Project Status
+
+Project: CIS3339 Data Platform
+Repository: DR0GERSMAN/CIS3339-Project
+
+Key accomplishments:
+- Repaired the frontend auth flow so a valid saved JWT is restored on refresh and expired/tampered tokens are cleared cleanly.
+- Added a centralized API error normalizer so unreachable servers and backend errors produce readable messages instead of TypeErrors or [object Object] toast output.
+- Removed dead Vuex-style logout code and fixed app startup to load the organization name without crashing.
+- Restored the missing dashboard and CRUD API methods used by the Vue views so the app builds successfully again.
+- Updated toast notifications across the app to display meaningful user-readable messages.
+
+Validation:
+- Frontend production build passes with: npm run build inside the frontend folder.
+
+Important setup notes:
+- The frontend expects a working VITE_ROOT_API value in frontend/.env.
+- The backend expects the environment variables required by its README (MONGO_URL, PORT, ORG_ID, JWT_SECRET).
+- The app depends on MongoDB being available and populated with the organization's data and seeded users.
+
+Recommended next step:
+- Start the backend, then run the frontend and verify login, dashboard, client/event/service search, and form flows in the browser.

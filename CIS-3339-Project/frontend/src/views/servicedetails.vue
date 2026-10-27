@@ -167,7 +167,7 @@ export default {
       this.events = eventsResponse;
 
     } catch (error) {
-      toast.error(error);
+      toast.error(error?.message || error || 'Something went wrong.');
     }
   },
   methods: {
@@ -195,7 +195,7 @@ export default {
         this.$router.push('/findservice')
         toast.success(response)
       } catch (error) {
-        toast.error('error updating service', error)
+        toast.error(`error updating service: ${error?.message || error}`)
       }
     },
 
@@ -211,9 +211,17 @@ export default {
         toast.success(response)
         this.$router.push('/findservice')
       } catch (error) {
-        toast.error(error)
+        toast.error(error?.message || error || 'Something went wrong.')
       }
     },
   }
 }
 </script>
+
+
+
+
+
+
+
+
