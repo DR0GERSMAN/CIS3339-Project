@@ -1,28 +1,24 @@
-import { createApp, markRaw } from 'vue';
-import router from './router';
-import App from './App.vue';
-import './index.css';
+import { createApp } from 'vue';
+import { createPinia } from 'pinia';
 import Toast from 'vue-toastification';
 import 'vue-toastification/dist/index.css';
-import { createPinia } from 'pinia';
+import './index.css';
+import App from './App.vue';
+import router from './router';
 import { useLoggedInUserStore } from './store/loggedInUser';
-
+import { setUnauthorizedHandler } from './api/api';
 const app = createApp(App);
-const pinia = createPinia();
-
-pinia.use(({ store }) => {
-  store.$router = markRaw(router);
+app.use(createPinia());
+app.use(Toast, { position: 'bottom-right' });
+// Restore both Pinia and Axios before initial route guards and data requests.
+const user = useLoggedInUserStore();
+user.restoreSession();
+setUnauthorizedHandler(() => {
+  user.clearSession();
+  router.replace({
+    path: '/login',
+    query: { redirect: router.currentRoute.value.fullPath }
+  });
 });
-
-app.use(pinia);
 app.use(router);
-
-const options = {
-  position: 'bottom-right'
-};
-app.use(Toast, options);
-
-const userStore = useLoggedInUserStore();
-userStore.restoreSession();
-
 app.mount('#app');

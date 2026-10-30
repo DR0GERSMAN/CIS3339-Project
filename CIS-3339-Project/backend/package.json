@@ -4,24 +4,23 @@
   "description": "Dataplatform backend API",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon app.js"
+    "start": "node app.js",
+    "dev": "node --watch app.js",
+    "db:init": "node scripts/init-db.js",
+    "test": "node --test --test-concurrency=1"
   },
   "dependencies": {
-    "bcrypt": "^5.1.0",
+    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
-    "dotenv": "^16.0.3",
-    "express": "^4.18.2",
-    "jsonwebtoken": "^9.0.0",
-    "mongoose": "^6.7.0",
-    "morgan": "^1.10.0",
-    "uuid": "^9.0.0"
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.19.0",
+    "morgan": "^1.10.1"
   },
   "devDependencies": {
-    "eslint": "^8.47.0",
-    "eslint-config-prettier": "^9.0.0",
-    "eslint-plugin-prettier": "^5.0.0",
-    "prettier": "^3.0.2"
+    "supertest": "^7.1.4",
+    "mongodb-memory-server": "^10.3.0"
   },
   "eslintConfig": {
     "root": true,
@@ -48,5 +47,8 @@
     "plugins": [
       "prettier"
     ]
+  },
+  "engines": {
+    "node": ">=20.19.0"
   }
 }

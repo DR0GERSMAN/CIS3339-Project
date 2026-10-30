@@ -1,42 +1,32 @@
-// This file contains all API endpoints for interacting with the "users" collection in the MongoDB database
-const express = require('express');
-const router = express.Router();
-// import bcrypt for comparing password to hashed password
-const bcrypt = require('bcrypt');
-// import JWT (JSON Web Token) to create a web token to the user after a successful login - allows user to make API calls
+const router = require('express').Router();
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-
-// import users data model schema
 const { users } = require('../models/models');
-
-const org = process.env.ORG_ID;
-
-// API endpoint to handle login
-router.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-
-  try {
-    const user = await users.findOne({ username: username, org: org });
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid username' });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid username or password' });
-    }
-
-    const payload = {
-      name: user.name,
-      role: user.role
-    };
-
-    // token expires in 30 days. This is not best security practice but still demonstrates how JWT work
-    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '30d' });
+const { asyncRoute, fail } = require('../lib/http');
+router.post(
+  '/login',
+  asyncRoute(async (req, res) => {
+    const { username, password } = req.body;
+    if (
+      typeof username !== 'string' ||
+      typeof password !== 'string' ||
+      username.length > 100 ||
+      password.length > 200
+    )
+      throw fail(400, 'Invalid username or password');
+    const user = await users.findOne({ username, org: process.env.ORG_ID });
+    if (
+      !user ||
+      !(await bcrypt.compare(password, user.password)) ||
+      !['viewer', 'editor'].includes(user.role)
+    )
+      throw fail(401, 'Invalid username or password');
+    const token = jwt.sign(
+      { name: user.username, role: user.role, orgId: String(user.org) },
+      process.env.JWT_SECRET,
+      { algorithm: 'HS256', subject: String(user._id), expiresIn: '8h' }
+    );
     res.json({ token });
-  } catch (err) {
-    res.status(500).send('Server error');
-  }
-});
-
+  })
+);
 module.exports = router;

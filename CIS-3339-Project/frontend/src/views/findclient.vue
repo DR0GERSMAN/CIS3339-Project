@@ -3,19 +3,25 @@
   <main>
     <div>
       <!--Header-->
-      <h1 class="font-bold text-4xl text-red-700 tracking-widest text-center mt-10">
+      <h1
+        class="font-bold text-4xl text-red-700 tracking-widest text-center mt-10"
+      >
         Find Client
       </h1>
     </div>
     <div class="px-10 pt-20">
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10">
+      <div
+        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10"
+      >
         <!--Search Client By selection-->
         <h2 class="text-2xl font-bold">Search Client By</h2>
         <!-- Displays Client Name search field -->
         <div class="flex flex-col">
           <select
+            aria-label="Search field"
             class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-            v-model="searchBy">
+            v-model="searchBy"
+          >
             <option value="Client Name">Client Name</option>
             <option value="Client Number">Client Number</option>
           </select>
@@ -23,153 +29,122 @@
         <!--Input box for searching by Client First Name-->
         <div class="flex flex-col" v-if="searchBy === 'Client Name'">
           <label class="block">
-            <input type="text"
+            <input
+              type="text"
               class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-              v-model="firstName" v-on:keyup.enter="handleSubmitForm" placeholder="Enter first name" />
+              v-model="firstName"
+              v-on:keyup.enter="handleSubmitForm"
+              placeholder="Enter first name"
+            />
           </label>
         </div>
         <!--Input box for searching by Client Last Name-->
         <div class="flex flex-col" v-if="searchBy === 'Client Name'">
           <label class="block">
-            <input type="text"
+            <input
+              type="text"
               class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-              v-model="lastName" v-on:keyup.enter="handleSubmitForm" placeholder="Enter last name" />
+              v-model="lastName"
+              v-on:keyup.enter="handleSubmitForm"
+              placeholder="Enter last name"
+            />
           </label>
         </div>
         <!-- Displays Client Number search field -->
         <div class="flex flex-col" v-if="searchBy === 'Client Number'">
           <input
             class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-            type="text" v-model="phoneNumber" v-on:keyup.enter="handleSubmitForm"
-            placeholder="Enter Client Phone Number" />
+            type="text"
+            v-model="phoneNumber"
+            v-on:keyup.enter="handleSubmitForm"
+            placeholder="Enter Client Phone Number"
+          />
         </div>
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10">
+      <div
+        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10"
+      >
         <div></div>
         <div></div>
         <!--Clear Search button-->
         <div class="mt-5 grid-cols-2">
-          <button class="mr-10 border border-red-700 bg-white text-red-700 rounded" @click="loadData" type="submit">
+          <button
+            class="mr-10 border border-red-700 bg-white text-red-700 rounded"
+            @click="loadData"
+            type="submit"
+          >
             Clear Search
           </button>
           <!--Search Client button-->
-          <button class="bg-red-700 text-white rounded" @click="handleSubmitForm" type="submit">
+          <button
+            class="bg-red-700 text-white rounded"
+            @click="handleSubmitForm"
+            type="submit"
+          >
             Search Client
           </button>
         </div>
       </div>
     </div>
 
-    <hr class="mt-10 mb-10" />
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10">
-      <div class="ml-10">
-        <h2 class="text-2xl font-bold">List of Clients</h2>
-        <h3 class="italic">Click table row to view client details</h3>
+    <section class="p-8" aria-live="polite">
+      <p v-if="loading" role="status">Loading...</p>
+      <div v-else-if="error" role="alert" class="text-red-700">
+        <p>{{ error }}</p>
+        <button class="border rounded px-4 py-2 mt-3" @click="execute">
+          Retry
+        </button>
       </div>
-      <!--Table showing list of Clients-->
-      <div class="flex flex-col col-span-2">
-        <table class="min-w-full shadow-md rounded">
-          <thead class="bg-gray-50 text-xl">
-            <tr>
-              <th class="p-4 text-left">Name</th>
-              <th class="p-4 text-left">Phone number</th>
-              <th class="p-4 text-left">City</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-300">
-            <tr @click="$router.push({ name: 'clientdetails', params: { id: client._id } })" v-for="client in clients"
-              :key="client._id" class="cursor-pointer" :class="{ 'hoverRow': hoverId === client._id }"
-              @mouseenter="hoverId = client._id" @mouseleave="hoverId = null">
-              <td class="p-2 text-left">
-                {{ client.firstName + ' ' + client.lastName }}
-              </td>
-              <td class="p-2 text-left">
-                {{ client.phoneNumber.primary }}
-              </td>
-              <td class="p-2 text-left">{{ client.address.city }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+      <DataTable
+        v-else
+        :columns="columns"
+        :rows="data || []"
+        @row-click="openRow"
+      />
+    </section>
   </main>
 </template>
-
-<script>
-import { getClients, searchClients } from '../api/api'
-import { useToast } from 'vue-toastification'
-
-//Notifications
-const toast = useToast()
-
-export default {
-  data() {
-    return {
-      //variable to store all clients and their information for the organization
-      clients: null,
-      // Parameters for search to occur
-      searchBy: '',
-      firstName: '',
-      lastName: '',
-      phoneNumber: '',
-      // variable stores the ID of the row that the mouse is currently hovering over (to highlight the row red)
-      hoverId: null,
-    }
-  },
-  mounted() {
-    // when component is mounted, load the data -
-    this.loadData()
-  },
-  methods: {
-    // method called when component is mounted
-    async loadData() {
-      // Resets all the variables
-      this.searchBy = ''
-      this.firstName = ''
-      this.lastName = ''
-      this.phoneNumber = ''
-
-      // get list of clients
-      try {
-        const response = await getClients();
-        this.clients = response;
-      } catch (error) {
-        toast.error(error?.message || error || 'Something went wrong.')
-      }
-    },
-    // method called when user searches for clients
-    async handleSubmitForm() {
-      // if user searched by client name
-      if (this.searchBy === 'Client Name') {
-        if (this.firstName || this.lastName) {
-          try {
-            const query = {
-              searchBy: 'name',
-              firstName: this.firstName,
-              lastName: this.lastName,
-            }
-            const response = await searchClients(query)
-            this.clients = response;
-          } catch (error) {
-            toast.error(error?.message || error || 'Something went wrong.')
-          }
-        }
-        // if user searches by client phone number
-      } else if (this.searchBy === 'Client Number') {
-        if (this.phoneNumber) {
-          try {
-            const query = {
-              searchBy: 'number',
-              phoneNumber: this.phoneNumber
-            }
-            const response = await searchClients(query)
-            this.clients = response;
-          } catch (error) {
-            toast.error(error?.message || error || 'Something went wrong.')
-          }
-        }
-      }
-    },
-  },
+<script setup>
+import { reactive, toRefs, ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { getClients, searchClients } from '../api/api';
+import { useApi } from '../composables/useApi';
+import { formatDate } from '../utils/formatDate';
+import DataTable from '../components/DataTable.vue';
+// Reactive form state replaces data(); useApi owns loading, data, errors and retry.
+const initial = { searchBy: '', firstName: '', lastName: '', phoneNumber: '' };
+const state = reactive({ ...initial });
+const { searchBy, firstName, lastName, phoneNumber } = toRefs(state);
+const query = ref(null);
+const router = useRouter();
+const { data, loading, error, execute } = useApi(() =>
+  query.value ? searchClients(query.value) : getClients()
+);
+const columns = [
+  { label: 'First name', key: 'firstName' },
+  { label: 'Last name', key: 'lastName' },
+  { label: 'Phone', key: 'phoneNumber.primary' }
+];
+function loadData() {
+  Object.assign(state, initial);
+  query.value = null;
+  execute();
 }
+function handleSubmitForm() {
+  if (state.searchBy === 'Client Name')
+    query.value = {
+      searchBy: 'name',
+      firstName: state.firstName,
+      lastName: state.lastName
+    };
+  else if (state.searchBy === 'Client Number')
+    query.value = { searchBy: 'number', phoneNumber: state.phoneNumber };
+  else return;
+  execute();
+}
+function openRow(row) {
+  router.push({ name: 'clientdetails', params: { id: row._id } });
+}
+// onMounted replaces the former mounted/loadData component lifecycle.
+onMounted(loadData);
 </script>

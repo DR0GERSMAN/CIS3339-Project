@@ -1,61 +1,62 @@
-// This is the main file for the backend
-
-// import functionalities
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const morgan = require('morgan');
-
 const cors = require('cors');
-// allow using a .env file
-require('dotenv').config(); //require the dotenv
-
-// creates a new instance of express application
+const { validateConfig } = require('./config');
 const app = express();
-
-// add cors header to the server
+app.disable('x-powered-by');
 app.use(
   cors({
-    origin: '*'
+    origin: process.env.CORS_ORIGIN,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
   })
 );
-
-// suppress mongoose warning to prepare for new version
-mongoose.set('strictQuery', false);
-
-// sets up mongoose for the mongoDB connection
-mongoose
-  .connect(process.env.MONGO_URL)
-  .then(() => {
-    console.log('Database connection Success!');
-  })
-  .catch((err) => {
-    console.error('Mongo Connection Error', err);
-  });
-
-// declare port number for the api
-const PORT = process.env.PORT || 3000;
-
-// setup and access request body
-app.use(express.json());
-app.use(morgan('dev'));
-
-// setup middle ware for routes
-app.use('/clients', require('./routes/clients'));
-app.use('/events', require('./routes/events'));
-app.use('/org', require('./routes/org'));
-app.use('/services', require('./routes/services'));
-app.use('/users', require('./routes/users'));
-
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+app.use(express.json({ limit: '100kb' }));
+app.get('/health', (req, res) => {
+  const connected = mongoose.connection.readyState === 1;
+  res
+    .status(connected ? 200 : 503)
+    .json({
+      status: connected ? 'ok' : 'degraded',
+      db: connected ? 'connected' : 'disconnected'
+    });
 });
-
-// error handler
-app.use(function (err, req, res, next) {
-  // logs error and error code to console
-  console.error(err.message, req);
-  if (!err.statusCode) {
-    err.statusCode = 500;
+for (const name of ['clients', 'events', 'services', 'users', 'org'])
+  app.use('/' + name, require('./routes/' + name));
+app.use((req, res, next) =>
+  next(Object.assign(new Error('Route not found'), { status: 404 }))
+);
+// All route failures, including malformed JSON and Mongoose validation, use one envelope.
+app.use((err, req, res, next) => {
+  let status = err.status || err.statusCode || 500;
+  let message = err.message;
+  if (err.name === 'ValidationError' || err.name === 'CastError') {
+    status = 400;
+    message = 'Invalid input. Check required fields and record IDs.';
   }
-  res.status(err.statusCode).send(err.message);
+  if (err.code === 11000) {
+    status = 400;
+    message = 'A record with that identifier already exists';
+  }
+  if (status >= 500) {
+    console.error(err.name + ': ' + err.message);
+    message = 'Unexpected server error';
+  }
+  res.status(status).json({ error: message });
 });
+async function start() {
+  validateConfig();
+  await mongoose.connect(process.env.MONGO_URL, {
+    serverSelectionTimeoutMS: 10000
+  });
+  const server = app.listen(process.env.PORT || 3000, () =>
+    console.log('API ready on port ' + (process.env.PORT || 3000))
+  );
+  return server;
+}
+if (require.main === module)
+  start().catch((err) => {
+    console.error('Startup failed: ' + err.message);
+    process.exit(1);
+  });
+module.exports = { app, start };

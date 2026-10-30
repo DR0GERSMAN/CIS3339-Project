@@ -1,11 +1,2 @@
-// example script for hash generation
-const bcrypt = require('bcrypt');
-const saltRounds = 10;
-const password = 'rftgyh';
-
-bcrypt
-  .hash(password, saltRounds)
-  .then((hash) => {
-    console.log('Hash: ', hash);
-  })
-  .catch((err) => console.error(err.message));
+console.error('Use npm run db:init to initialize users safely.');
+process.exitCode = 1;
