@@ -1,94 +1,76 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import { useLoggedInUserStore } from '../store/loggedInUser'
-
-// make all paths and names lowercase for consistency
+import { createRouter, createWebHistory } from 'vue-router';
+import { useLoggedInUserStore } from '../store/loggedInUser';
+const auth = { requiresAuth: true };
+const editor = { requiresAuth: true, requiresEditor: true };
 const routes = [
+  { path: '/', component: () => import('../views/home.vue'), meta: auth },
   {
-    path: '/',
-    component: () => import('../views/home.vue')
-  },
-  {
-    path: "/login",
-    name: "login",
+    path: '/login',
+    name: 'login',
     component: () => import('../views/login.vue')
   },
   {
     path: '/clientform',
     name: 'clientform',
-    // only authenticated users can create clients
-    meta: { requiresAuth: true, requiresEditor: true },
-    component: () => import('../views/clientform.vue')
+    component: () => import('../views/clientform.vue'),
+    meta: editor
   },
   {
     path: '/findclient',
     name: 'findclient',
-    meta: { requiresAuth: true },
-    component: () => import('../views/findclient.vue')
+    component: () => import('../views/findclient.vue'),
+    meta: auth
   },
   {
     path: '/clientdetails/:id',
     name: 'clientdetails',
-    meta: { requiresAuth: true },
-    component: () => import('../views/clientdetails.vue')
+    component: () => import('../views/clientdetails.vue'),
+    meta: auth
   },
   {
     path: '/eventform',
     name: 'eventform',
-    meta: { requiresAuth: true, requiresEditor: true },
-    component: () => import('../views/eventform.vue')
+    component: () => import('../views/eventform.vue'),
+    meta: editor
   },
   {
     path: '/findevents',
     name: 'findevents',
-    meta: { requiresAuth: true },
-    component: () => import('../views/findevents.vue')
+    component: () => import('../views/findevents.vue'),
+    meta: auth
   },
   {
     path: '/eventdetails/:id',
     name: 'eventdetails',
-    meta: { requiresAuth: true },
-    component: () => import('../views/eventDetails.vue')
+    component: () => import('../views/eventDetails.vue'),
+    meta: auth
   },
   {
     path: '/serviceform',
     name: 'serviceform',
-    meta: { requiresAuth: true, requiresEditor: true },
-    component: () => import('../views/serviceform.vue')
+    component: () => import('../views/serviceform.vue'),
+    meta: editor
   },
   {
     path: '/findservice',
     name: 'findservice',
-    meta: { requiresAuth: true },
-    component: () => import('../views/findservice.vue')
+    component: () => import('../views/findservice.vue'),
+    meta: auth
   },
   {
     path: '/servicedetails/:id',
     name: 'servicedetails',
-    meta: { requiresAuth: true },
-    component: () => import('../views/servicedetails.vue')
-  }
-]
-const router = createRouter({
-  history: createWebHistory(),
-  routes
-})
-
-// protecting the routes
-router.beforeEach((to) => {
-  const store = useLoggedInUserStore()
-  if (to.meta.requiresAuth && !store.isLoggedIn) {
-    return {
-      path: '/login',
-      // save the location we were at to come back later
-      query: { redirect: to.fullPath },
-    }
-  }
-
-  // Only editors can open creation forms, including by typing the URL directly.
-  if (to.meta.requiresEditor && store.role !== 'editor') {
-    return { path: '/' }
-  }
-})
-
-export default router
-
+    component: () => import('../views/servicedetails.vue'),
+    meta: auth
+  },
+  { path: '/:pathMatch(.*)*', component: () => import('../views/notfound.vue') }
+];
+export function routeAccess(to, user) {
+  if (to.meta.requiresAuth && !user.isLoggedIn)
+    return { path: '/login', query: { redirect: to.fullPath } };
+  if (to.meta.requiresEditor && user.role !== 'editor') return { path: '/' };
+  return true;
+}
+const router = createRouter({ history: createWebHistory(), routes });
+router.beforeEach((to) => routeAccess(to, useLoggedInUserStore()));
+export default router;

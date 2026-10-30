@@ -195,6 +195,10 @@ const serviceDataSchema = new Schema(
 
 // create models from mongoose schemas
 const clients = mongoose.model('clients', clientDataSchema);
+userDataSchema.index({ org: 1, username: 1 }, { unique: true });
+clientDataSchema.index({ orgs: 1, lastName: 1 });
+eventDataSchema.index({ org: 1, date: 1 });
+serviceDataSchema.index({ org: 1, name: 1 });
 const users = mongoose.model('users', userDataSchema);
 const orgs = mongoose.model('org', orgDataSchema);
 const events = mongoose.model('events', eventDataSchema);

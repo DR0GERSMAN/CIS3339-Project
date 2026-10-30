@@ -3,21 +3,27 @@
   <main>
     <div>
       <!--Header-->
-      <h1 class="font-bold text-4xl text-red-700 tracking-widest text-center mt-10">
+      <h1
+        class="font-bold text-4xl text-red-700 tracking-widest text-center mt-10"
+      >
         Event Details
       </h1>
     </div>
     <div class="px-10 py-20">
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10">
+      <div
+        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10"
+      >
         <h2 class="text-2xl font-bold">Event Details</h2>
         <!-- Event Name input field -->
         <div class="flex flex-col">
           <label class="block">
             <span class="text-gray-700">Event Name</span>
             <span style="color: #ff0000">*</span>
-            <input type="text"
+            <input
+              type="text"
               class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-              v-model="event.name" />
+              v-model="event.name"
+            />
             <span v-if="v$.event.name.$error" class="text-red-500">
               Event Name is required
             </span>
@@ -29,14 +35,21 @@
           <label class="block">
             <span class="text-gray-700">Date</span>
             <span style="color: #ff0000">*</span>
-            <input type="date"
+            <input
+              type="date"
               class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-              v-model="event.date" />
+              v-model="event.date"
+            />
             <span v-if="v$.event.date.$error" class="text-red-500">
               <span v-if="v$.event.date.required.$invalid">
                 Event Date is required
               </span>
-              <span v-else-if="!v$.event.date.required.$invalid && v$.event.date.validDate.$invalid">
+              <span
+                v-else-if="
+                  !v$.event.date.required.$invalid &&
+                  v$.event.date.validDate.$invalid
+                "
+              >
                 Event Date must be a valid date
               </span>
             </span>
@@ -51,24 +64,37 @@
             <span class="text-gray-700">Description</span>
             <textarea
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-              rows="2" v-model="event.description"></textarea>
+              rows="2"
+              v-model="event.description"
+            ></textarea>
           </label>
         </div>
       </div>
 
       <!-- Services Offered at Event checkboxes -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10 mt-10">
+      <div
+        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10 mt-10"
+      >
         <h2 class="text-2xl font-bold">Services Offered at Event</h2>
         <div class="flex flex-col grid-cols-3">
           <div>
             <ul v-if="services.length" class="space-y-2">
-              <li v-for="service in services" :key="service._id" :data-service-id="service._id"
-                class="rounded-lg border border-gray-300 p-2 hover:bg-gray-100 transition-colors relative">
+              <li
+                v-for="service in services"
+                :key="service._id"
+                :data-service-id="service._id"
+                class="rounded-lg border border-gray-300 p-2 hover:bg-gray-100 transition-colors relative"
+              >
                 <label class="block w-full h-full">
-                  <input type="checkbox" :id="service._id" :value="service._id"
-                    :checked="event.services.includes(service._id)" v-model="event.services"
+                  <input
+                    type="checkbox"
+                    :id="service._id"
+                    :value="service._id"
+                    :checked="event.services.includes(service._id)"
+                    v-model="event.services"
                     :disabled="service.status === 'Inactive'"
-                    class="rounded border-gray-300 disabled:opacity-50 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-offset-0 focus:ring-indigo-200 focus:ring-opacity-50 mr-2">
+                    class="rounded border-gray-300 disabled:opacity-50 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-offset-0 focus:ring-indigo-200 focus:ring-opacity-50 mr-2"
+                  />
                   <span class="font-medium">{{ service.name }}</span>
                 </label>
               </li>
@@ -80,33 +106,44 @@
       </div>
 
       <!-- grid container -->
-      <div class="mt-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10">
+      <div
+        class="mt-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10"
+      >
         <h2 class="text-2xl font-bold">Address</h2>
         <!-- Address 1 input field -->
         <div class="flex flex-col">
           <label class="block">
             <span class="text-gray-700">Address Line 1</span>
-            <input type="text"
+            <input
+              type="text"
               class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-              placeholder v-model="event.address.line1" />
+              placeholder
+              v-model="event.address.line1"
+            />
           </label>
         </div>
         <!-- Address 2 input field -->
         <div class="flex flex-col">
           <label class="block">
             <span class="text-gray-700">Address Line 2</span>
-            <input type="text"
+            <input
+              type="text"
               class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-              placeholder v-model="event.address.line2" />
+              placeholder
+              v-model="event.address.line2"
+            />
           </label>
         </div>
         <!-- City input field -->
         <div class="flex flex-col">
           <label class="block">
             <span class="text-gray-700">City</span>
-            <input type="text"
+            <input
+              type="text"
               class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-              placeholder v-model="event.address.city" />
+              placeholder
+              v-model="event.address.city"
+            />
           </label>
         </div>
         <div></div>
@@ -114,42 +151,62 @@
         <div class="flex flex-col">
           <label class="block">
             <span class="text-gray-700">County</span>
-            <input type="text"
+            <input
+              type="text"
               class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-              placeholder v-model="event.address.county" />
+              placeholder
+              v-model="event.address.county"
+            />
           </label>
         </div>
         <!-- Zip Code input field -->
         <div class="flex flex-col">
           <label class="block">
             <span class="text-gray-700">Zip Code</span>
-            <input type="text"
+            <input
+              type="text"
               class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-              placeholder v-model="event.address.zip" />
+              placeholder
+              v-model="event.address.zip"
+            />
           </label>
         </div>
       </div>
 
       <!-- grid container -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10">
+      <div
+        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10"
+      >
         <div></div>
         <!--Update Event button-->
         <div class="flex justify-between mt-10 mr-20">
-          <button @click="submitEventUpdate" type="submit" class="bg-green-700 disabled:opacity-50 text-white rounded"
-            :disabled="user.role === 'viewer'">
+          <button
+            @click="submitEventUpdate"
+            type="submit"
+            class="bg-green-700 disabled:opacity-50 text-white rounded"
+            :disabled="user.role !== 'editor'"
+          >
             Update Event
           </button>
         </div>
         <!--Delete Event button-->
         <div class="flex justify-between mt-10 mr-20">
-          <button @click="submitDeleteEvent" type="submit" class="bg-red-700  disabled:opacity-50 text-white rounded"
-            :disabled="user.role === 'viewer'">
+          <button
+            @click="submitDeleteEvent"
+            type="submit"
+            class="bg-red-700 disabled:opacity-50 text-white rounded"
+            :disabled="user.role !== 'editor'"
+          >
             Delete Event
           </button>
           <!--Go back button-->
         </div>
         <div class="flex justify-between mt-10 mr-20">
-          <button type="reset" class="border border-red-700 bg-white text-red-700 rounded" @click=this.$router.back()>
+          <button
+            type="reset"
+            class="border border-red-700 bg-white text-red-700 rounded"
+            @click="router.back()"
+          >
             Go back
           </button>
         </div>
@@ -158,7 +215,9 @@
       <hr class="mt-10 mb-10" />
 
       <!-- grid container -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10">
+      <div
+        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10"
+      >
         <div>
           <h2 class="text-2xl font-bold">List of Attendees</h2>
           <h3 class="italic">Click table row to view client details</h3>
@@ -174,10 +233,20 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-300">
-              <tr @click="$router.push({name: 'clientdetails', params: { id: client._id } })" 
-              v-for="client in clients" :key="client._id" class="cursor-pointer"
-                :class="{ 'hoverRow': hoverId === client._id }" @mouseenter="hoverId = client._id"
-                @mouseleave="hoverId = null">
+              <tr
+                @click="
+                  $router.push({
+                    name: 'clientdetails',
+                    params: { id: client._id }
+                  })
+                "
+                v-for="client in clients"
+                :key="client._id"
+                class="cursor-pointer"
+                :class="{ hoverRow: hoverId === client._id }"
+                @mouseenter="hoverId = client._id"
+                @mouseleave="hoverId = null"
+              >
                 <td class="p-2 text-left">
                   {{ client.firstName + ' ' + client.lastName }}
                 </td>
@@ -194,130 +263,125 @@
   </main>
 </template>
 
-<script>
-//import vuelidate functionalities
-import useVuelidate from '@vuelidate/core'
-import { required } from '@vuelidate/validators'
-import { useLoggedInUserStore } from "../store/loggedInUser";
-import { getEventById, getEventAttendees, getServices, updateEvent, deleteEvent } from '../api/api'
-import { useToast } from 'vue-toastification'
+<script setup>
+import useVuelidate from '@vuelidate/core';
+import { required } from '@vuelidate/validators';
+import { useLoggedInUserStore } from '../store/loggedInUser';
+import {
+  getEventById,
+  getEventAttendees,
+  getServices,
+  updateEvent,
+  deleteEvent
+} from '../api/api';
+import { useToast } from 'vue-toastification';
+import { reactive, toRefs, computed, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
-//Notifications
-const toast = useToast()
-
-export default {
-  data() {
-    return {
-      //variable to hold clients for selected event
-      clients: [],
-      //variable to hold services for selected event
-      services: [],
-      //variable to hold event information
-      event: {
-        name: null,
-        description: null,
-        date: null,
-        address: {
-          line1: null,
-          line2: null,
-          city: null,
-          county: null,
-          zip: null
-        },
-        attendees: [],
-        services: []
-      },
-      // variable stores the ID of the row that the mouse is currently hovering over (to highlight the row red)
-      hoverId: null,
-    }
-  },
-  setup() {
-    // register Vuelidate and loggedIn store
-    const v$ = useVuelidate();
-    const user = useLoggedInUserStore();
-    return { v$, user };
-  },
-  validations() {
-    // validations
-    const validDate = (value) => {
-      const date = new Date(value)
-      return !isNaN(date)
-    }
-
-    return {
-      event: {
-        name: { required },
-        date: {
-          required,
-          validDate
-        },
-      }
-    }
-  },
-  async mounted() {
-    // when component is mounted, data is loaded
-    try {
-      const [eventResponse, clientsResponse, servicesResponse] = await Promise.all([
-        getEventById(this.$route.params.id),
-        getEventAttendees(this.$route.params.id),
-        getServices(),
-      ]);
-
-      eventResponse.date = new Date(eventResponse.date).toISOString().substring(0, 10);
-
-      this.event = eventResponse;
-      this.clients = clientsResponse;
-      this.services = servicesResponse;
-     // this.inactiveServices = servicesResponse.filter(item => item.status === "Inactive")
-
-    } catch (error) {
-      toast.error(`error loading data: ${error?.message || error}`)
-    }
-  },
-  methods: {
-    // method called when user attempts to update the event -> asks for confirmation
-    async submitEventUpdate() {
-      // Trigger validation
-      this.v$.$validate();
-
-      if (this.v$.$error) {
-        // Form is invalid, do not proceed
-        return;
-      }
-
-      try {
-        const response = await updateEvent(this.$route.params.id, this.event);
-        toast.success(response)
-        this.$router.push('/findevents')
-      } catch (error) {
-        toast.error(`error updating event: ${error?.message || error}`)
-      }
+// Composition API migration: reactive replaces data(), and toRefs keeps template bindings reactive.
+const state = reactive({
+  //variable to hold clients for selected event
+  clients: [],
+  //variable to hold services for selected event
+  services: [],
+  //variable to hold event information
+  event: {
+    name: null,
+    description: null,
+    date: null,
+    address: {
+      line1: null,
+      line2: null,
+      city: null,
+      county: null,
+      zip: null
     },
+    attendees: [],
+    services: []
+  },
+  // variable stores the ID of the row that the mouse is currently hovering over (to highlight the row red)
+  hoverId: null
+});
+const { clients, services, event, hoverId } = toRefs(state);
+const route = useRoute();
+const router = useRouter();
+const user = useLoggedInUserStore();
+const toast = useToast();
 
-    // method to make the API call to delete the event - can only be deleted if no attendees are in event
-    async submitDeleteEvent() {
-      try {
-        if (this.event.attendees != 0)
-        {
-          toast.info('Event can not be deleted since it has attendees.')
-          return
-        }
-        const response = await deleteEvent(this.$route.params.id);
-        toast.success(response)
-        this.$router.push('/findevents')
-      } catch (error) {
-        toast.error(error?.message || error || 'Something went wrong.')
+// Explicit reactive rules/state replace the Options API validations hook.
+const rules = computed(() => {
+  // validations
+  const validDate = (value) => {
+    const date = new Date(value);
+    return !isNaN(date);
+  };
+
+  return {
+    event: {
+      name: { required },
+      date: {
+        required,
+        validDate
       }
-    },
+    }
+  };
+});
+const v$ = useVuelidate(rules, state);
+
+async function submitEventUpdate() {
+  // Trigger validation
+  const valid = await v$.value.$validate();
+
+  if (!valid) {
+    // Form is invalid, do not proceed
+    return;
+  }
+
+  try {
+    const response = await updateEvent(route.params.id, state.event);
+    toast.success(response);
+    router.push('/findevents');
+  } catch (error) {
+    toast.error(`error updating event: ${error?.message || error}`);
   }
 }
+
+async function submitDeleteEvent() {
+  if (!window.confirm('Delete this record? This cannot be undone.')) return;
+  try {
+    if (state.event.attendees.length > 0) {
+      toast.info('Event can not be deleted since it has attendees.');
+      return;
+    }
+    const response = await deleteEvent(route.params.id);
+    toast.success(response);
+    router.push('/findevents');
+  } catch (error) {
+    toast.error(error?.message || error || 'Something went wrong.');
+  }
+}
+
+// onMounted replaces mounted() without using a component this binding.
+onMounted(async () => {
+  // when component is mounted, data is loaded
+  try {
+    const [eventResponse, clientsResponse, servicesResponse] =
+      await Promise.all([
+        getEventById(route.params.id),
+        getEventAttendees(route.params.id),
+        getServices()
+      ]);
+
+    eventResponse.date = new Date(eventResponse.date)
+      .toISOString()
+      .substring(0, 10);
+
+    state.event = eventResponse;
+    state.clients = clientsResponse;
+    state.services = servicesResponse;
+    // inactiveServices = servicesResponse.filter(item => item.status === "Inactive")
+  } catch (error) {
+    toast.error(`error loading data: ${error?.message || error}`);
+  }
+});
 </script>
-
-
-
-
-
-
-
-
-

@@ -1,0 +1,7 @@
+node_modules/
+.local-db/
+frontend/dist/
+*.log
+coverage/
+
+.env

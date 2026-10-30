@@ -1,66 +1,65 @@
 import { defineStore } from 'pinia';
-import { useToast } from 'vue-toastification';
+import { ref } from 'vue';
 import jwtDecode from 'jwt-decode';
-import { loginUser, logoutUser, isTokenExpired } from '../api/api';
-
-const toast = useToast();
-
-export const useLoggedInUserStore = defineStore({
-  id: 'loggedInUser',
-  state: () => ({
-    name: '',
-    role: '',
-    isLoggedIn: false
-  }),
-  actions: {
-    restoreSession() {
+import { loginUser, logoutUser, setAuthHeader } from '../api/api';
+// Setup store: state is explicit refs and restored before the router starts.
+export const useLoggedInUserStore = defineStore('loggedInUser', () => {
+  const name = ref(''),
+    role = ref(''),
+    isLoggedIn = ref(false);
+  function clearSession() {
+    logoutUser();
+    name.value = '';
+    role.value = '';
+    isLoggedIn.value = false;
+  }
+  function apply(token) {
+    const decoded = jwtDecode(token);
+    if (
+      typeof decoded.exp !== 'number' ||
+      decoded.exp * 1000 <= Date.now() ||
+      !['viewer', 'editor'].includes(decoded.role) ||
+      !decoded.orgId
+    )
+      throw new Error('Invalid saved session');
+    name.value = decoded.name || '';
+    role.value = decoded.role;
+    isLoggedIn.value = true;
+    setAuthHeader(token);
+  }
+  function restoreSession() {
+    try {
       const token = localStorage.getItem('authToken');
-      if (!token || isTokenExpired(token)) {
-        logoutUser();
-        this.name = '';
-        this.role = '';
-        this.isLoggedIn = false;
+      if (!token) {
+        clearSession();
         return false;
       }
-
-      try {
-        const decodedToken = jwtDecode(token);
-        this.name = decodedToken.name || '';
-        this.role = decodedToken.role || '';
-        this.isLoggedIn = true;
-        return true;
-      } catch {
-        logoutUser();
-        this.name = '';
-        this.role = '';
-        this.isLoggedIn = false;
-        return false;
-      }
-    },
-    async login(username, password) {
-      try {
-        const token = await loginUser(username, password);
-        const decodedToken = jwtDecode(token);
-        this.$patch({
-          isLoggedIn: true,
-          role: decodedToken.role || '',
-          name: decodedToken.name || ''
-        });
-        this.$router.push('/');
-        toast.success('Login successful!');
-      } catch (error) {
-        toast.error(error?.message || 'Login failed.');
-      }
-    },
-    logout() {
-      logoutUser();
-      this.$patch({
-        name: '',
-        role: '',
-        isLoggedIn: false
-      });
-      this.$router.push('/login');
-      toast.info('You have been logged out!');
+      apply(token);
+      return true;
+    } catch {
+      clearSession();
+      return false;
     }
   }
+  async function login(username, password) {
+    const token = await loginUser(username, password);
+    try {
+      apply(token);
+    } catch (error) {
+      clearSession();
+      throw error;
+    }
+  }
+  function logout() {
+    clearSession();
+  }
+  return {
+    name,
+    role,
+    isLoggedIn,
+    restoreSession,
+    login,
+    logout,
+    clearSession
+  };
 });

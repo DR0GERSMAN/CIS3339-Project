@@ -1,22 +1,24 @@
-Sprint 2 Project Status
+# Sprint 2 checkpoint — October 29, 2026
 
-Project: CIS3339 Data Platform
-Repository: DR0GERSMAN/CIS3339-Project
+Composition API migration: all 16 Vue files use `<script setup>`. Migration comments explain reactive state, validation, lifecycle and chart changes. The supplied team package was integrated with AI assistance; do not represent this import as individual teammate implementation.
 
-Key accomplishments:
-- Repaired the frontend auth flow so a valid saved JWT is restored on refresh and expired/tampered tokens are cleared cleanly.
-- Added a centralized API error normalizer so unreachable servers and backend errors produce readable messages instead of TypeErrors or [object Object] toast output.
-- Removed dead Vuex-style logout code and fixed app startup to load the organization name without crashing.
-- Restored the missing dashboard and CRUD API methods used by the Vue views so the app builds successfully again.
-- Updated toast notifications across the app to display meaningful user-readable messages.
+Verified on this Mac:
+- Dependency setup and production frontend build passed.
+- Frontend tests: 6 passed. Added explicit jsdom storage setup for Node 25 compatibility.
+- Backend integration tests: 11 passed in an isolated temporary database.
+- Local MongoDB initialization, API on port 3000 and frontend on 5173 started.
+- Browser: editor/viewer login, dashboard datasets/charts, all three lists, client pagination, client detail refresh/session restore, service detail/update, logout, and viewer redirect from client creation route passed.
+- Fixed narrow-screen navigation that previously pushed the login form below the viewport.
 
-Validation:
-- Frontend production build passes with: npm run build inside the frontend folder.
+Concerns / remaining checks:
+- Full browser create/edit/delete walkthroughs for every domain have not been completed in this review. API CRUD is covered by the integration suite.
+- Windows startup and public deployment were not tested in this review.
+- Supplied VERIFICATION.md describes earlier Linux checks; it is not evidence that those checks were repeated here.
+- Team review, legitimate individual contribution history and final Canvas submission remain the team's responsibility.
 
-Important setup notes:
-- The frontend expects a working VITE_ROOT_API value in frontend/.env.
-- The backend expects the environment variables required by its README (MONGO_URL, PORT, ORG_ID, JWT_SECRET).
-- The app depends on MongoDB being available and populated with the organization's data and seeded users.
+Start from CIS-3339-Project: npm run setup, then npm run demo:production.
+Open http://localhost:5173. Editor admin/admin; viewer user/user.
+Run npm test and npm run build from the same folder.
 
-Recommended next step:
-- Start the backend, then run the frontend and verify login, dashboard, client/event/service search, and form flows in the browser.
+Suggested Canvas checkpoint note (review before submitting):
+“Our Sprint 2 implementation migrates the Vue frontend to Composition API with migration comments. The production build and included frontend/API tests pass. Local startup and selected editor/viewer workflows were verified on macOS. Known remaining verification: complete manual CRUD walkthroughs and Windows startup. AI assistance was used to integrate and review the supplied team package and fix layout/test-environment issues.”

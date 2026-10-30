@@ -1,22 +1,12 @@
-// This file contains API endpoints for interacting with "org" collection in MongoDB database
-const express = require('express');
-const router = express.Router();
-require('dotenv').config();
-
-// importing data model schemas
+const router = require('express').Router();
 const { orgs } = require('../models/models');
-
-// API endpoint to get org - will use the environment variable as a "configuration" for the organization of the backend instance
-router.get('/', (req, res, next) => {
-  orgs.findOne({ _id: process.env.ORG_ID }, (error, data) => {
-    if (error) {
-      return next(error);
-    } else if (!data) {
-      res.status(400).send('Organization not found');
-    } else {
-      res.json(data.name);
-    }
-  });
-});
-
+const { asyncRoute, fail } = require('../lib/http');
+router.get(
+  '/',
+  asyncRoute(async (req, res) => {
+    const org = await orgs.findById(process.env.ORG_ID).select('name');
+    if (!org) throw fail(404, 'Organization not found; run npm run db:init');
+    res.json(org.name);
+  })
+);
 module.exports = router;
