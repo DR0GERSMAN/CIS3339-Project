@@ -10,7 +10,7 @@ This package extends the supplied Vue 3 / Express / MongoDB template. It preserv
 
 - Node.js 22 LTS recommended; package engines require Node 20.19 or newer.
 - Internet for npm install and, on the first convenience-demo run, the MongoDB binary download.
-- Supported local desktop: Windows, macOS, Linux with MongoDB-compatible OS/CPU. Verification in this package was on Linux / Node 24; Windows/macOS were not tested here.
+- Supported local desktop: Windows, macOS, Linux with MongoDB-compatible OS/CPU. Earlier package verification was on Linux / Node 24. An AI-assisted check of the downloaded main-branch copy on macOS / Node 24.14.1 on October 30, 2026 passed setup, all 17 tests, the production build, production startup, both demo logins, and client/event/service API reads. Windows and a complete browser CRUD walkthrough were not tested in this review.
 - Ports 3000 (backend) and 5173 (frontend) must be free.
 
 ## Fast local production demo
@@ -71,7 +71,7 @@ Vite preview serves at port 5173. Keep the backend running. A deployed static si
 
 ## Configuration
 
-Both required .env files and matching .env.example files are included for local course grading. They contain dedicated demonstration values, not personal or production credentials.
+Run `npm run setup` to generate `backend/.env` and `frontend/.env` from the committed `.env.example` files. Setup generates a unique local JWT signing secret. Actual `.env` files are excluded from Git. Submit both actual `.env` files privately through Canvas, per the instructor's announcement. The default configuration is for a local course demonstration.
 
 | File / key | Meaning |
 | --- | --- |
